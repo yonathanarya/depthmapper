@@ -1,13 +1,11 @@
 # depthmapper
 
-This is a (relatively) small utility to be used as a testbed for experimenting with stereo depth mapping in OpenCV.
+This is for my Undergraduate Final Project.
+Using 2 Logitech C270 camera as the sensor and Jetson Nano 4GB as the depth processor
+The robot controller used in this project is Pixhawk 2.1 Cube
 
-I built this to find how well depth mapping works on the Nvidia Jetson Nano. Support is present for StereoBM and StereoSGBM, as well as experimental support for AANet+. 
-
-Hardware-wise, this utility has been used with the WaveShare IMX219-83 stereo camera.
-
-Python 3.6 or higher is needed.
-
+### Pre-requisities
+To use the cuda version of OpenCV in this project, we have to build our own OpenCV as by default, the built-in OpenCV shipped with Jetson Nano Jetpack is not having Cuda support.
 
 ### Running the utility
 

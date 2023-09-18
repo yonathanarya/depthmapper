@@ -37,7 +37,7 @@ class cudaMatcher:
     #                       algorithm_name: str = "stereo_sgm_cuda"
     #                       ) -> np.ndarray:
     def process_pair(self, rectified_pair,
-                          algorithm_name: str = "stereo_bm_cuda"
+                          algorithm_name: str = "stereo_sgm_cuda"
                           ) -> np.ndarray:
         """
         Computes the disparity map using the named algorithm.

@@ -21,6 +21,11 @@ class StereoCapture:
         self.right_camera_id = int(config['general']['right_camera_id'])
 
         self.show_rgb = int(config['general']['show_rgb_frame'])
+        self.disable_stream = int(config['general']['disable_stream'])
+        self.enable_record = int(config['general']['enable_record'])
+        self.result = cv2.VideoWriter('result.avi', 
+                                      cv2.VideoWriter_fourcc(*'MJPG'),
+                                      10, (self.width,self.height))
 
         print(matcher)
 
@@ -39,7 +44,6 @@ class StereoCapture:
         self.rightCapture = open_capture(self.right_camera_id)
 
         cv2.namedWindow("Depth map")
-
         ticks = []
         # used to record the time when we processed last frame
         prev_frame_time = 0
@@ -54,8 +58,12 @@ class StereoCapture:
             right_grabbed, right_frame = self.rightCapture.read()
             
             if left_grabbed and right_grabbed:
+                # left_frame = cv2.remap(left_frame,Left_Stereo_Map_x,Left_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                # right_frame = cv2.remap(right_frame,Right_Stereo_Map_x,Right_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
                 rectified_pair = self.rectify(left_frame, right_frame)
-                # rectified_pair = [cv2.cvtColor(cv2.imread("left.jpg"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.jpg"), cv2.COLOR_BGR2GRAY)]
+                # rectified_pair = [cv2.cvtColor(cv2.imread("left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.png"), cv2.COLOR_BGR2GRAY)]
+                # rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
+                
                 disparity = self.matcher.process_pair(rectified_pair)
 
                 end = int(time.time() * 1000.0)
@@ -81,8 +89,15 @@ class StereoCapture:
                 cv2.putText(disparity_color, fpsscreen, (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
                 # Show depth map
                 if self.show_rgb:
+                    print("SHOW RGB")
                     cv2.imshow("Depth map", np.hstack((self.rectify(left_frame, right_frame))))
+                elif self.disable_stream:
+                    if self.enable_record:
+                        self.result.write(disparity_color)
+                    else:
+                        continue
                 else:
+                    print("DEPTH MAP")
                     cv2.imshow("Depth map", disparity_color)
                     # continue
 
