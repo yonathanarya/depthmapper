@@ -1,7 +1,8 @@
 # Jetson Nano CUDA Depthmapper for AGV
 
 This is for my Undergraduate Final Project.
-Using 2 Logitech C270 camera as the sensor and Jetson Nano 4GB as the depth processor
+Using 2 Logitech C270 cameras as the sensor and Jetson Nano 4GB as the depth processor.
+
 The robot controller used in this project is Pixhawk 2.1 Cube.
 
 ### Hardware Setup
