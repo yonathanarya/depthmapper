@@ -4,6 +4,7 @@ import numpy as np
 from lib.helpers import open_capture
 import time
 
+from lib.mavlink import sendDepth
 from lib.matchers.stereoBM import StereoBMMatcher
 from lib.matchers.cuda import cudaMatcher
 from lib.matchers.stereoSGBM import StereoSGBMMatcher
@@ -13,9 +14,15 @@ class StereoCapture:
         self.config = config
         self.calibrator = calibrator
         self.stopped = False
+        self.mav = sendDepth(config)
 
         self.width = int(config['general']['width'])
         self.height = int(config['general']['height'])
+
+        self.left = int(config['estimated_depth']['left_pixel'])
+        self.right = int(config['estimated_depth']['right_pixel'])
+        self.up = int(config['estimated_depth']['up_pixel'])
+        self.down = int(config['estimated_depth']['down_pixel'])
 
         self.left_camera_id = int(config['general']['left_camera_id'])
         self.right_camera_id = int(config['general']['right_camera_id'])
@@ -53,9 +60,12 @@ class StereoCapture:
         while self.stopped == False:
             start = int(time.time() * 1000.0)
             end = 0
-
-            left_grabbed, left_frame = self.leftCapture.read()
-            right_grabbed, right_frame = self.rightCapture.read()
+            
+            self.leftCapture.grab()
+            self.rightCapture.grab()
+            
+            left_grabbed, left_frame = self.leftCapture.retrieve()
+            right_grabbed, right_frame = self.rightCapture.retrieve()
             
             if left_grabbed and right_grabbed:
                 # left_frame = cv2.remap(left_frame,Left_Stereo_Map_x,Left_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
@@ -70,7 +80,8 @@ class StereoCapture:
 
                 disparity_normal = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
                 image = np.array(disparity_normal, dtype = np.uint8)
-                disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_BONE)
+                disparity_color = image
+                # disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_BONE)
                 # font which we will be using to display FPS
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 # time when we finish processing for this frame
@@ -86,19 +97,27 @@ class StereoCapture:
                 fps = str(fps)
                 print("FPS = " , fps)
                 # putting the FPS count on the frame
-                cv2.putText(disparity_color, fpsscreen, (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
+                cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (0, 0, 0), 15, cv2.LINE_AA)
+                cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
                 # Show depth map
                 if self.show_rgb:
                     print("SHOW RGB")
                     cv2.imshow("Depth map", np.hstack((self.rectify(left_frame, right_frame))))
                 elif self.disable_stream:
                     if self.enable_record:
-                        self.result.write(disparity_color)
+                        # print("Disparity value= " + str(disparity_color[320][180]))
+                        self.result.write(cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                        estimated = self.estimate(disparity_color)
+                        self.mav.depth(estimated)
+                        # self.result.write(disparity_color)
                     else:
-                        continue
+                        estimated = self.estimate(disparity_color)
+                        self.mav.depth(estimated)
+                        # continue
                 else:
                     print("DEPTH MAP")
                     cv2.imshow("Depth map", disparity_color)
+                    self.estimate(disparity_color)
                     # continue
 
                 k = cv2.waitKey(1) & 0xFF
@@ -123,6 +142,15 @@ class StereoCapture:
 
         # Apply rectification
         return self.calibrator.rectify(left_grey, right_grey)
+    
+    def estimate(self, disparity):
+        arr = np.array(disparity)
+        # depth = float(depth)
+        depth = np.sum(arr[self.up:self.down, self.left:self.right])
+        estimated = depth/((self.down-self.up)*(self.right-self.left))
+        print("estimated depth: " + str(round(estimated,1)))
+        return int(estimated)
+
 
     def stop(self):
         self.leftCapture.stop()
