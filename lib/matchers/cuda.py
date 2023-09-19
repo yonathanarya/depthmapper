@@ -37,7 +37,7 @@ class cudaMatcher:
     #                       algorithm_name: str = "stereo_sgm_cuda"
     #                       ) -> np.ndarray:
     def process_pair(self, rectified_pair,
-                          algorithm_name: str = "stereo_sgm_cuda"
+                          algorithm_name: str = "stereo_bm_cuda"
                           ) -> np.ndarray:
         """
         Computes the disparity map using the named algorithm.
@@ -72,8 +72,15 @@ class cudaMatcher:
             self.stereo_bm_cuda.setSpeckleRange(int(config['cuda_bm']['speckle_range']))
             self.stereo_bm_cuda.setSpeckleWindowSize(int(config['cuda_bm']['speckle_window']))
             self.stereo_bm_cuda.setDisp12MaxDiff(int(config['cuda_bm']['disp_diff']))
-            disparity_cuda = algorithm.compute(left_cuda, right_cuda, cv2.cuda_Stream.Null())
-            return disparity_cuda.download()
+            # right_matcher = cv2.ximgproc.createRightMatcher(self.stereo_bm_cuda);
+            disparity_cuda_l = algorithm.compute(left_cuda, right_cuda, cv2.cuda_Stream.Null())
+            # disparity_cuda_r = algorithm.compute(right_cuda, left_cuda, cv2.cuda_Stream.Null())
+
+            # wls_filter = cv2.ximgproc.createDisparityWLSFilter(self.stereo_bm_cuda);
+            # wls_filter.setLambda(float(config['filter']['lmbda']));
+            # wls_filter.setSigmaColor(float(config['filter']['sigma']));
+            # filtered_disp = wls_filter.filter(disparity_cuda_l.download(), rectified_pair[0], disparity_map_right=disparity_cuda_r.download());
+            return disparity_cuda_l.download()
         elif(algorithm_name == "stereo_sgm_cuda"):
             self.stereo_sgm_cuda.setBlockSize(int(config['cuda_sgm']['block_size']))
             self.stereo_sgm_cuda.setDisp12MaxDiff(int(config['cuda_sgm']['disp_12_max_diff']))

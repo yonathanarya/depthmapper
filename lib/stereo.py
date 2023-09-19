@@ -144,10 +144,13 @@ class StereoCapture:
         return self.calibrator.rectify(left_grey, right_grey)
     
     def estimate(self, disparity):
+        config = self.config
+        factor = factor = float(config['estimated_depth']['depth_factor'])
         arr = np.array(disparity)
         # depth = float(depth)
         depth = np.sum(arr[self.up:self.down, self.left:self.right])
-        estimated = depth/((self.down-self.up)*(self.right-self.left))
+        count = np.count_nonzero(arr[self.up:self.down, self.left:self.right])
+        estimated = 255-(factor*depth/count)
         print("estimated depth: " + str(round(estimated,1)))
         return int(estimated)
 
