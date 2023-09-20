@@ -54,6 +54,7 @@ for broadcasting mavlink connection over UDP to control and monitor pixhawk over
 ```
 sudo ./mav.sh
 ```
+but you need to install mavproxy first [from here](https://pypi.org/project/MAVProxy/)
 
 to run the main program:
 
