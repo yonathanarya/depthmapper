@@ -27,7 +27,7 @@ Battery: 2S LiPo battery
 BEC: UBEC 5V/3A (for powering Jetson)
 
 ### Pre-requisites
-To use the CUDA version of OpenCV in this project, we have to build our own OpenCV as, by default, the built-in OpenCV shipped with Jetson Nano Jetpack is not having Cuda support.
+To use the CUDA version of OpenCV in this project, we have to build our own OpenCV as, by default, the built-in OpenCV shipped with Jetson Nano Jetpack is not having Cuda support. And also need to install pymavlink
 
 ### Running the program
 If running for the first time, prepare the chessboard then run the calibration first:
