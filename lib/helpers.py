@@ -1,5 +1,4 @@
 import cv2
-from lib.camera import Camera
 
 def open_capture(id):
     capture = cv2.VideoCapture(int(id))

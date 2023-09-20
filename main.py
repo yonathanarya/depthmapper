@@ -6,6 +6,8 @@ import argparse
 import configparser
 
 import signal
+import os
+
 
 from lib.calibration import Calibration
 from lib.stereo import StereoCapture
@@ -27,6 +29,11 @@ def main():
 
     config = configparser.ConfigParser()
     config.read('settings.conf')
+
+    print('changing permission for /dev/ttyUSB0')
+    os.system('sudo chmod a+rw /dev/ttyUSB0 &')
+    print('disabling camera auto setting')
+    os.system('./disable_auto_camera1.sh &')
 
     calibrator = Calibration(config, LOAD_DIR)
     if not calibrator.has_calibration():

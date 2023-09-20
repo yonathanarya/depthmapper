@@ -56,7 +56,7 @@ class StereoCapture:
         prev_frame_time = 0
         # used to record the time at which we processed current frame
         new_frame_time = 0
-
+        
         while self.stopped == False:
             start = int(time.time() * 1000.0)
             end = 0
@@ -67,63 +67,69 @@ class StereoCapture:
             left_grabbed, left_frame = self.leftCapture.retrieve()
             right_grabbed, right_frame = self.rightCapture.retrieve()
             
-            if left_grabbed and right_grabbed:
-                # left_frame = cv2.remap(left_frame,Left_Stereo_Map_x,Left_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
-                # right_frame = cv2.remap(right_frame,Right_Stereo_Map_x,Right_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
-                rectified_pair = self.rectify(left_frame, right_frame)
-                # rectified_pair = [cv2.cvtColor(cv2.imread("left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.png"), cv2.COLOR_BGR2GRAY)]
-                # rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
+            try:
+                if left_grabbed and right_grabbed:
+                    # left_frame = cv2.remap(left_frame,Left_Stereo_Map_x,Left_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                    # right_frame = cv2.remap(right_frame,Right_Stereo_Map_x,Right_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                    rectified_pair = self.rectify(left_frame, right_frame)
+                    # rectified_pair = [cv2.cvtColor(cv2.imread("left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.png"), cv2.COLOR_BGR2GRAY)]
+                    # rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
+                    
+                    disparity = self.matcher.process_pair(rectified_pair)
+
+                    end = int(time.time() * 1000.0)
+
+                    disparity_normal = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
+                    image = np.array(disparity_normal, dtype = np.uint8)
+                    disparity_color = image
+                    # disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_BONE)
+                    # font which we will be using to display FPS
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    # time when we finish processing for this frame
+                    new_frame_time = time.time()
+                    fps = 1/(new_frame_time-prev_frame_time)
+                    prev_frame_time = new_frame_time
                 
-                disparity = self.matcher.process_pair(rectified_pair)
-
-                end = int(time.time() * 1000.0)
-
-                disparity_normal = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
-                image = np.array(disparity_normal, dtype = np.uint8)
-                disparity_color = image
-                # disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_BONE)
-                # font which we will be using to display FPS
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                # time when we finish processing for this frame
-                new_frame_time = time.time()
-                fps = 1/(new_frame_time-prev_frame_time)
-                prev_frame_time = new_frame_time
-            
-                fps = float(fps)
-                fpsscreen = str(round(fps,3))
-            
-                # converting the fps to string so that we can display it on frame
-                # by using putText function
-                fps = str(fps)
-                print("FPS = " , fps)
-                # putting the FPS count on the frame
-                cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (0, 0, 0), 15, cv2.LINE_AA)
-                cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
-                # Show depth map
-                if self.show_rgb:
-                    print("SHOW RGB")
-                    cv2.imshow("Depth map", np.hstack((self.rectify(left_frame, right_frame))))
-                elif self.disable_stream:
-                    if self.enable_record:
-                        # print("Disparity value= " + str(disparity_color[320][180]))
-                        self.result.write(cv2.applyColorMap(image, cv2.COLORMAP_BONE))
-                        estimated = self.estimate(disparity_color)
-                        self.mav.depth(estimated)
-                        # self.result.write(disparity_color)
+                    fps = float(fps)
+                    fpsscreen = str(round(fps,3))
+                
+                    # converting the fps to string so that we can display it on frame
+                    # by using putText function
+                    fps = str(fps)
+                    print("FPS = " , fps)
+                    # putting the FPS count on the frame
+                    cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (0, 0, 0), 15, cv2.LINE_AA)
+                    cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
+                    # Show depth map
+                    if self.show_rgb:
+                        print("SHOW RGB")
+                        cv2.imshow("Depth map", np.hstack((self.rectify(left_frame, right_frame))))
+                    elif self.disable_stream:
+                        if self.enable_record:
+                            # print("Disparity value= " + str(disparity_color[320][180]))
+                            self.result.write(cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            estimated = self.estimate(disparity_color)
+                            self.mav.depth(estimated)
+                            # self.result.write(disparity_color)
+                        else:
+                            cv2.imwrite('sample.png', cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            estimated = self.estimate(disparity_color)
+                            self.mav.depth(estimated)
+                            # continue
                     else:
+                        print("DEPTH MAP")
+                        cv2.imwrite('sample.png', cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                        cv2.imshow("Depth map", disparity_color)
                         estimated = self.estimate(disparity_color)
                         self.mav.depth(estimated)
                         # continue
-                else:
-                    print("DEPTH MAP")
-                    cv2.imshow("Depth map", disparity_color)
-                    self.estimate(disparity_color)
-                    # continue
 
-                k = cv2.waitKey(1) & 0xFF
-                if k == ord('q'):
-                    break
-            else:
+                    k = cv2.waitKey(1) & 0xFF
+                    if k == ord('q'):
+                        break
+                else:
+                    end = int(time.time() * 1000.0)
+            except KeyboardInterrupt:
                 end = int(time.time() * 1000.0)
 
             ticks.append(end - start)
@@ -151,8 +157,19 @@ class StereoCapture:
         depth = np.sum(arr[self.up:self.down, self.left:self.right])
         count = np.count_nonzero(arr[self.up:self.down, self.left:self.right])
         estimated = 255-(factor*depth/count)
+        black = ((self.down-self.up)*(self.right-self.left))-count
         print("estimated depth: " + str(round(estimated,1)))
-        return int(estimated)
+        print("black pixel: "+str(black))
+        if black > 10000:
+            output = 100
+        else:
+            if estimated >= 170 and estimated < 255:
+                output = 200
+            elif estimated >= 120 and estimated < 170:
+                output = 150
+            elif estimated <120:
+                output = 100
+        return int(output)
 
 
     def stop(self):

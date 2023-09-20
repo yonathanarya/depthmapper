@@ -7,7 +7,7 @@ class sendDepth:
         self.baudrate = int(config['mavlink']['baudrate'])
 
         self.master = mavutil.mavlink_connection(self.serialpath, baud=self.baudrate, source_system=255)
-        
+        # self.master = mavutil.mavlink_connection('tcp:192.168.31.134:5762')
         self.wait_heartbeat(self.master)
         
         print("connecting mavlink...")
