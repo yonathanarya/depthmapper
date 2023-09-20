@@ -25,7 +25,7 @@ class sendDepth:
 
     def wait_heartbeat(self, m):
         """
-        wait for a heartbeat so we know the target system IDs
+        Wait for a heartbeat so we know the target system IDs
         """
         print("Waiting for APM heartbeat")
         msg = m.recv_match(type="HEARTBEAT", blocking=True)

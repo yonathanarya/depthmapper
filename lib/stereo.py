@@ -36,11 +36,11 @@ class StereoCapture:
 
         print(matcher)
 
-        if matcher == "stereobm":
+        if matcher == "bm":
             self.matcher = StereoBMMatcher(config)
         elif matcher == "cuda":
             self.matcher = cudaMatcher(config)
-        elif matcher == "stereosgbm":
+        elif matcher == "sgbm":
             self.matcher = StereoSGBMMatcher(config)
         else:
             print("unknown matcher specified, stopping")

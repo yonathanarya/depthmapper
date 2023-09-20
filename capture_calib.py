@@ -12,7 +12,7 @@ def main():
     config.read("settings.conf")
 
     calibrator = Calibration(config, LOAD_DIR)
-    input("Hit any key when you have the chessboard prepared")
+    input("Press any key if calibration image is prepared")
 
     calibrator.capture_images()
 

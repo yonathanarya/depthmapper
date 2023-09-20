@@ -16,7 +16,7 @@ LOAD_DIR = str(Path.home()) + "/.stereo_calibration/"
 
 parser = argparse.ArgumentParser(description="Depth mapping module")
 parser.add_argument("-m", "--matcher", default="cuda",
-                    help="Matcher to use. Options: stereobm, stereosgbm, cuda")
+                    help="Algorithm to use. Options: bm, sgbm, cuda")
 
 capture = None
 
@@ -37,12 +37,13 @@ def main():
 
     calibrator = Calibration(config, LOAD_DIR)
     if not calibrator.has_calibration():
-        print("Calibration required!")
-        input("run `python3 calibrate.py`")
+        print("Calibration file not found!")
+        print("run `python3 capture_calib.py`")
+        input("then run `python3 calibrate.py`")
 
         return
 
-    print("Processing stereo images")
+    print("Loading StereoDepth data...")
 
     args = parser.parse_args()
 
