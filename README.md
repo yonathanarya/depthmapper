@@ -66,19 +66,28 @@ then press ctrl+c when the terminal display:
 >>> disabling camera auto setting
 ```
 
-You can choose which algorithm is used via the `-a` or `--algorithm` command line switch:
+You can choose which algorithm is used via the `-a` command line switch:
 
 ```
 python main.py -a <algorithm>
 
 options:
 
--a stereobm
--a stereosgbm
--a cuda
+-a bm
+-a sgbm
+-a cudabm
+-a cudasgm
 ```
+bm: CPU block matching algorithm
 
-Cuda is the default if this option is ignored.
+sgbm: CPU semi global block matching algorithm
+
+cudabm: CUDA/GPU block matching algorithm, similiar to bm but using GPU to compute (for my use case, this is the best so i set this as default)
+
+cudasgm: CUDA/GPU semi global matching, based on OpenCV docs is similiar to sgbm but using GPU to compute. (I'm still curious why it is not named sgbm even if the documentation is similiar)
+
+
+CudaBM is the default if this option is ignored.
 
 
 ### Configuration

@@ -38,8 +38,10 @@ class StereoCapture:
 
         if matcher == "bm":
             self.matcher = StereoBMMatcher(config)
-        elif matcher == "cuda":
-            self.matcher = cudaMatcher(config)
+        elif matcher == "cudabm":
+            self.matcher = cudaMatcher(config, "stereo_bm_cuda")
+        elif matcher == "cudasgm":
+            self.matcher = cudaMatcher(config, "stereo_sgm_cuda")
         elif matcher == "sgbm":
             self.matcher = StereoSGBMMatcher(config)
         else:

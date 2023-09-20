@@ -8,7 +8,7 @@ class cudaMatcher:
     This class takes care of the CUDA input such that such that images
     can be provided as numpy array
     """
-    def __init__(self, config) -> None:        
+    def __init__(self, config, alg) -> None:        
         self.stereo_bm_cuda = cuda.createStereoBM(numDisparities=int(config["cuda_bm"]["min_disparity"]),
                                                   blockSize=int(config["cuda_bm"]["block_size"]))
         self.stereo_bp_cuda = cuda.createStereoBeliefPropagation(ndisp=int(config["cuda_bm"]["bp_ndisp"]))
@@ -17,6 +17,7 @@ class cudaMatcher:
                                                      numDisparities=int(config["cuda_sgm"]["num_disparities"]),
                                                      uniquenessRatio=int(config["cuda_sgm"]["uniqueness_ratio"])
                                                      )
+        self.alg = alg
     @staticmethod
     def __numpy_to_gpumat(np_image: np.ndarray) -> cv2.cuda_GpuMat:
         """
@@ -35,7 +36,6 @@ class cudaMatcher:
     #                       algorithm_name: str = "stereo_sgm_cuda"
     #                       ) -> np.ndarray:
     def process_pair(self, rectified_pair,
-                          algorithm_name: str = "stereo_bm_cuda"
                           ) -> np.ndarray:
         """
         Computes the disparity map using the named algorithm.
@@ -45,7 +45,7 @@ class cudaMatcher:
         Returns:
             The disparity map
         """
-        algorithm = getattr(self, algorithm_name)
+        algorithm = getattr(self, self.alg)
         left_cuda = self.__numpy_to_gpumat(rectified_pair[0])
         right_cuda = self.__numpy_to_gpumat(rectified_pair[1])
         # if algorithm_name == "stereo_bm_cuda":
@@ -56,7 +56,7 @@ class cudaMatcher:
         # else:
         config = configparser.ConfigParser()
         config.read("settings.conf")
-        if(algorithm_name == "stereo_bm_cuda"):
+        if(self.alg == "stereo_bm_cuda"):
             self.stereo_bm_cuda.setPreFilterType(int(config["cuda_bm"]["prefilter_type"]))
             self.stereo_bm_cuda.setPreFilterType(int(config["cuda_bm"]["prefilter_size"]))
             self.stereo_bm_cuda.setPreFilterType(int(config["cuda_bm"]["prefilter_cap"]))
@@ -78,7 +78,7 @@ class cudaMatcher:
             # wls_filter.setSigmaColor(float(config["filter"]["sigma"]));
             # filtered_disp = wls_filter.filter(disparity_cuda_l.download(), rectified_pair[0], disparity_map_right=disparity_cuda_r.download());
             return disparity_cuda_l.download()
-        elif(algorithm_name == "stereo_sgm_cuda"):
+        elif(self.alg == "stereo_sgm_cuda"):
             self.stereo_sgm_cuda.setBlockSize(int(config["cuda_sgm"]["block_size"]))
             self.stereo_sgm_cuda.setDisp12MaxDiff(int(config["cuda_sgm"]["disp_12_max_diff"]))
             self.stereo_sgm_cuda.setMinDisparity(int(config["cuda_sgm"]["min_disparity"]))
