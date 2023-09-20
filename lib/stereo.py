@@ -1,13 +1,13 @@
 import cv2
 import sys
 import numpy as np
-from lib.helpers import open_capture
+from lib.cam import open_capture
 import time
 
 from lib.mavlink import sendDepth
-from lib.matchers.stereoBM import StereoBMMatcher
-from lib.matchers.cuda import cudaMatcher
-from lib.matchers.stereoSGBM import StereoSGBMMatcher
+from lib.algo.bm import StereoBMMatcher
+from lib.algo.cuda import cudaMatcher
+from lib.algo.sgbm import StereoSGBMMatcher
 
 class StereoCapture:
     def __init__(self, config, calibrator, matcher = "stereobm"):

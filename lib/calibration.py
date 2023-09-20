@@ -7,7 +7,7 @@ from stereovision.calibration import StereoCalibrator
 from stereovision.calibration import StereoCalibration
 from stereovision.exceptions import ChessboardNotFoundError
 
-from lib.helpers import open_capture
+from lib.cam import open_capture
 
 # Handles creation, saving and loading of calibration state for
 # stereo cameras.
