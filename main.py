@@ -15,7 +15,7 @@ from lib.stereo import StereoCapture
 LOAD_DIR = str(Path.home()) + "/.stereo_calibration/"
 
 parser = argparse.ArgumentParser(description="Depth mapping module")
-parser.add_argument("-m", "--matcher", default="cuda",
+parser.add_argument("-a", "--algorithm", default="cuda",
                     help="Algorithm to use. Options: bm, sgbm, cuda")
 
 capture = None

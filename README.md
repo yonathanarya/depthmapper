@@ -27,9 +27,15 @@ Battery: 2S LiPo battery
 BEC: UBEC 5V/3A (for powering Jetson)
 
 ### Pre-requisites
-To use the CUDA version of OpenCV in this project, we have to build our own OpenCV as, by default, the built-in OpenCV shipped with Jetson Nano Jetpack is not having Cuda support [like the tutorial here](https://qengineering.eu/install-opencv-on-jetson-nano.html). And also need to install pymavlink
+To use the CUDA version of OpenCV in this project, we have to build our own OpenCV as, by default, the built-in OpenCV shipped with Jetson Nano Jetpack is not having Cuda support [like the tutorial here](https://qengineering.eu/install-opencv-on-jetson-nano.html). And also need to install [pymavlink](https://pypi.org/project/pymavlink/) and [StereoVision](https://pypi.org/project/StereoVision/) for calibration.
+```
+pip3 install pymavlink
+pip3 install StereoVision
+```
 
 ### Running the program
+You can download the zip of this repo or use `git clone`. Choose whatever you want.
+
 If running for the first time, prepare the chessboard then run the calibration first:
 ```
 python3 capture_calib.py
@@ -59,16 +65,16 @@ then press ctrl+c when the terminal display:
 >>> disabling camera auto setting
 ```
 
-You can choose which algorithm is used via the `-m` command line switch:
+You can choose which algorithm is used via the `-a` or `--algorithm` command line switch:
 
 ```
-python main.py -m <algorithm>
+python main.py -a <algorithm>
 
 options:
 
--m stereobm
--m stereosgbm
--m cuda
+-a stereobm
+-a stereosgbm
+-a cuda
 ```
 
 Cuda is the default if this option is ignored.
