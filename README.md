@@ -3,8 +3,6 @@
 This is for my Undergraduate Final Project.
 Using 2 Logitech C270 cameras as the sensor and Jetson Nano 4GB as the depth processor.
 
-The robot controller used in this project is Pixhawk 2.1 Cube.
-
 ### Hardware Setup
 Laptop: Huawei Matebook X Pro (2018) i7-8550u 16GB RAM
 
@@ -48,10 +46,7 @@ for broadcasting mavlink connection over UDP to control and monitor pixhawk over
 ```
 sudo ./mav.sh
 ```
-to disable camera auto adjust:
-```
-./disable_auto_camera.sh
-```
+
 to run the main program:
 
 ```
