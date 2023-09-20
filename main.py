@@ -33,7 +33,7 @@ def main():
     print("changing permission for /dev/ttyUSB0")
     os.system("sudo chmod a+rw /dev/ttyUSB0 &")
     print("disabling camera auto setting")
-    os.system("./disable_auto_camera1.sh &")
+    os.system("./disable_auto_camera1.sh")
 
     calibrator = Calibration(config, LOAD_DIR)
     if not calibrator.has_calibration():

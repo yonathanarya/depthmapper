@@ -52,6 +52,10 @@ to run the main program:
 ```
 python3 main.py
 ```
+then press ctrl+c when the terminal display:
+```
+>>> disabling camera auto setting
+```
 
 You can choose which algorithm is used via the `-m` command line switch:
 
