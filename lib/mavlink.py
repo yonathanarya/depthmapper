@@ -73,18 +73,4 @@ class sendDepth:
             self.sensor_id,
             self.orientation,
             self.covariance)
-    
-    # def depth(self, depth):
-    #     while True:
-    #         for i in range (5, 1000, 10):
-    #             time.sleep(0.5)
-    #             print("range: " + str(depth))
-    #             self.master.mav.distance_sensor_send(
-    #                 int((time.time() - self.tstart) * 1000),
-    #                 self.min_measurement,
-    #                 self.max_measurement,
-    #                 i,
-    #                 self.sensor_type,
-    #                 self.sensor_id,
-    #                 self.orientation,
-    #                 self.covariance)
+

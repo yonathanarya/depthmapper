@@ -27,7 +27,7 @@ class StereoCapture:
         self.left_camera_id = int(config["general"]["left_camera_id"])
         self.right_camera_id = int(config["general"]["right_camera_id"])
 
-        self.show_rgb = int(config["general"]["show_rgb_frame"])
+        self.show_gray = int(config["general"]["show_gray_frame"])
         self.disable_stream = int(config["general"]["disable_stream"])
         self.enable_record = int(config["general"]["enable_record"])
         self.result = cv2.VideoWriter("result.avi", 
@@ -53,11 +53,8 @@ class StereoCapture:
         self.leftCapture = open_capture(self.left_camera_id)
         self.rightCapture = open_capture(self.right_camera_id)
 
-        cv2.namedWindow("Depth map")
         ticks = []
-        # used to record the time when we processed last frame
         prev_frame_time = 0
-        # used to record the time at which we processed current frame
         new_frame_time = 0
         
         while self.stopped == False:
@@ -72,11 +69,8 @@ class StereoCapture:
             
             try:
                 if left_grabbed and right_grabbed:
-                    # left_frame = cv2.remap(left_frame,Left_Stereo_Map_x,Left_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
-                    # right_frame = cv2.remap(right_frame,Right_Stereo_Map_x,Right_Stereo_Map_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
                     rectified_pair = self.rectify(left_frame, right_frame)
                     # rectified_pair = [cv2.cvtColor(cv2.imread("left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.png"), cv2.COLOR_BGR2GRAY)]
-                    # rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
                     
                     disparity = self.matcher.process_pair(rectified_pair)
 
@@ -85,40 +79,32 @@ class StereoCapture:
                     disparity_normal = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
                     image = np.array(disparity_normal, dtype = np.uint8)
                     disparity_color = image
-                    # disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_BONE)
-                    # font which we will be using to display FPS
+
                     font = cv2.FONT_HERSHEY_SIMPLEX
-                    # time when we finish processing for this frame
                     new_frame_time = time.time()
                     fps = 1/(new_frame_time-prev_frame_time)
                     prev_frame_time = new_frame_time
-                
                     fps = float(fps)
                     fpsscreen = str(round(fps,3))
-                
-                    # converting the fps to string so that we can display it on frame
-                    # by using putText function
                     fps = str(fps)
                     print("FPS = " , fps)
-                    # putting the FPS count on the frame
+
                     cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (0, 0, 0), 15, cv2.LINE_AA)
                     cv2.putText(disparity_color, "FPS:"+fpsscreen, (10, 30), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
-                    # Show depth map
-                    if self.show_rgb:
-                        print("SHOW RGB")
-                        cv2.imshow("Depth map", np.hstack((self.rectify(left_frame, right_frame))))
+
+                    if self.show_gray:
+                        print("Show grayscale from left and right frame")
+                        cv2.imshow("GRAYSCALE", np.hstack((self.rectify(left_frame, right_frame))))
                     elif self.disable_stream:
                         if self.enable_record:
-                            # print("Disparity value= " + str(disparity_color[320][180]))
                             self.result.write(cv2.applyColorMap(image, cv2.COLORMAP_BONE))
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
-                            # self.result.write(disparity_color)
                         else:
-                            cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            # cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            # cv2.imwrite("orig.png", np.hstack((self.rectify(left_frame, right_frame))))
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
-                            # continue
                     else:
                         print("DEPTH MAP")
                         cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
@@ -152,11 +138,9 @@ class StereoCapture:
             right_frame: right image captured
         return: rectified GRAY image
         """
-        # Convert to greyscale
         left_grey = cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY)
         right_grey = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
 
-        # Apply rectification
         return self.calibrator.rectify(left_grey, right_grey)
     
     def estimate(self, disparity):
