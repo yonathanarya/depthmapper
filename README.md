@@ -4,6 +4,8 @@ This is for my Undergraduate Final Project.
 Using 2 Logitech C270 cameras as the sensor and Jetson Nano 4GB as the depth processor.
 
 ### Hardware Setup
+![alt text](https://github.com/yonathanarya/depthmapper/blob/master/sample.png?raw=true)
+
 Laptop: Huawei Matebook X Pro (2018) i7-8550u 16GB RAM
 
 SBC: Nvidia Jetson Nano Development Kit 4GB
