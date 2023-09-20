@@ -7,11 +7,6 @@ class StereoSGBMMatcher:
     def __init__(self, config):
         self.width = int(config["general"]["width"])
         self.height = int(config["general"]["height"])
-
-        downsample = int(config["general"]["downsample_factor"])
-
-        self.resize = (int(self.width / downsample), int(self.height / downsample))
-
         blockSize = int(config["stereosgbm"]["block_size"])
 
         # Apply configuration settings
@@ -36,8 +31,8 @@ class StereoSGBMMatcher:
         Returns:
             The disparity map
         """
-        left = cv2.resize(rectified_pair[0], self.resize)
-        right = cv2.resize(rectified_pair[1], self.resize)
+        left = rectified_pair[0]
+        right = rectified_pair[1]
 
         disparity = self.sbm.compute(left, right)
 
