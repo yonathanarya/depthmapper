@@ -3,11 +3,11 @@ import time
 
 class sendDepth:
     def __init__(self,config) -> None:
-        self.serialpath = config['mavlink']['serialpath']
-        self.baudrate = int(config['mavlink']['baudrate'])
+        self.serialpath = config["mavlink"]["serialpath"]
+        self.baudrate = int(config["mavlink"]["baudrate"])
 
         self.master = mavutil.mavlink_connection(self.serialpath, baud=self.baudrate, source_system=255)
-        # self.master = mavutil.mavlink_connection('tcp:192.168.31.134:5762')
+        # self.master = mavutil.mavlink_connection("tcp:192.168.31.134:5762")
         self.wait_heartbeat(self.master)
         
         print("connecting mavlink...")
@@ -24,9 +24,11 @@ class sendDepth:
         
 
     def wait_heartbeat(self, m):
-        '''wait for a heartbeat so we know the target system IDs'''
+        """
+        wait for a heartbeat so we know the target system IDs
+        """
         print("Waiting for APM heartbeat")
-        msg = m.recv_match(type='HEARTBEAT', blocking=True)
+        msg = m.recv_match(type="HEARTBEAT", blocking=True)
         print("Heartbeat from APM (system %u component %u)" % (m.target_system, m.target_component))
 
     def wait_conn(self):
@@ -45,6 +47,9 @@ class sendDepth:
             time.sleep(0.5)
     
     def arm_test(self):
+        """
+        This method only for testing, arming the motor output
+        """
         self.master.mav.command_long_send(
         self.master.target_system,
         self.master.target_component,
@@ -53,6 +58,11 @@ class sendDepth:
         1, 0, 0, 0, 0, 0, 0)
     
     def depth(self, depth):
+        """
+        This method send mavlink message to flight controller for rangefinder data
+        args:
+            depth: distance value in cm
+        """
         print("range: " + str(depth))
         self.master.mav.distance_sensor_send(
             int((time.time() - self.tstart) * 1000),

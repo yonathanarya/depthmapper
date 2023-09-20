@@ -13,16 +13,19 @@ from lib.helpers import open_capture
 # stereo cameras.
 
 class Calibration:
-    def __init__(self, config, load_directory, capture_directory = '/tmp/stereo/'):
-        self.width = int(config['general']['width'])
-        self.height = int(config['general']['height'])
+    """
+    This class provide calibration method for stereo image
+    """
+    def __init__(self, config, load_directory, capture_directory = "/tmp/stereo/"):
+        self.width = int(config["general"]["width"])
+        self.height = int(config["general"]["height"])
 
-        self.chessboard_rows = int(config['calibration']['chessboard_rows'])
-        self.chessboard_cols = int(config['calibration']['chessboard_cols'])
-        self.chessboard_size = float(config['calibration']['chessboard_size'])
+        self.chessboard_rows = int(config["calibration"]["chessboard_rows"])
+        self.chessboard_cols = int(config["calibration"]["chessboard_cols"])
+        self.chessboard_size = float(config["calibration"]["chessboard_size"])
 
-        self.left_camera_id = config['general']['left_camera_id']
-        self.right_camera_id = config['general']['right_camera_id']
+        self.left_camera_id = config["general"]["left_camera_id"]
+        self.right_camera_id = config["general"]["right_camera_id"]
 
         self.capture_directory = capture_directory
         self.load_directory = load_directory
@@ -34,24 +37,30 @@ class Calibration:
 
         if not os.path.exists(self.capture_directory):
             os.mkdir(self.capture_directory)
-            os.mkdir(self.capture_directory + 'left')
-            os.mkdir(self.capture_directory + 'right')
+            os.mkdir(self.capture_directory + "left")
+            os.mkdir(self.capture_directory + "right")
 
     def has_calibration(self):
+        """
+        This method will check whether the calibration files already exist
+        """
         return self.active_calibration != None
 
     def capture_images(self):
-        print('Calibration :: Capturing frames...')
+        """
+        This method will capture image from camera and save it to image file on /tmp/stereo/
+        """
+        print("Calibration :: Capturing frames...")
 
         leftCapture = open_capture(self.left_camera_id)
         rightCapture = open_capture(self.right_camera_id)
 
-        print('Waiting...')
+        print("Waiting...")
         time.sleep(1)
 
         for i in range (0, 30, 1):
-            input('Hit any key when you have the chessboard prepared')
-            print('Waiting 1s...')
+            input("Hit any key when you have the chessboard prepared")
+            print("Waiting 1s...")
             time.sleep(1)
             calibrator = StereoCalibrator( self.chessboard_rows,  self.chessboard_cols,  self.chessboard_size, (self.width, self.height))
             while True:
@@ -65,33 +74,36 @@ class Calibration:
                     calibrator._get_corners(frame1)
                     calibrator._get_corners(frame2)
                 except ChessboardNotFoundError as error:
-                    print(str(i) + ': ' + str(error))
+                    print(str(i) + ": " + str(error))
                 else:
-                    cv2.imwrite(self.capture_directory + 'left/img' + str(i) + '.png', frame1)
-                    cv2.imwrite(self.capture_directory + 'right/img' + str(i) + '.png', frame2)
-                    print('Frame ' + str(i) + ' done')
+                    cv2.imwrite(self.capture_directory + "left/img" + str(i) + ".png", frame1)
+                    cv2.imwrite(self.capture_directory + "right/img" + str(i) + ".png", frame2)
+                    print("Frame " + str(i) + " done")
                     break
-        print('Calibration :: Captured.')
+        print("Calibration :: Captured.")
 
     def compute_calibration(self, show_results = False):
-        print('Calibration :: Computing...')
+        """
+        This method will compute saved image from /tmp/stereo for calibration
+        """
+        print("Calibration :: Computing...")
         # calibrator = StereoCalibrator( chessboard_rows,  chessboard_cols,  chessboard_size, (width, height))
         calibrator = StereoCalibrator( self.chessboard_rows,  self.chessboard_cols,  self.chessboard_size, (self.width, self.height))
 
         for i in range (0, 30, 1):
-            if not os.path.exists(self.capture_directory + 'left/img' + str(i) + '.png'):
+            if not os.path.exists(self.capture_directory + "left/img" + str(i) + ".png"):
                 continue
-            if not os.path.exists(self.capture_directory + 'right/img' + str(i) + '.png'):
+            if not os.path.exists(self.capture_directory + "right/img" + str(i) + ".png"):
                 continue
 
-            left = cv2.imread(self.capture_directory + 'left/img' + str(i) + '.png', 1)
-            right = cv2.imread(self.capture_directory + 'right/img' + str(i) + '.png', 1)
+            left = cv2.imread(self.capture_directory + "left/img" + str(i) + ".png", 1)
+            right = cv2.imread(self.capture_directory + "right/img" + str(i) + ".png", 1)
 
             try:
                 calibrator._get_corners(left)
                 calibrator._get_corners(right)
             except ChessboardNotFoundError as error:
-                print(str(i) + ': ' + str(error))
+                print(str(i) + ": " + str(error))
             else:
                 calibrator.add_corners((left, right))
 
@@ -102,16 +114,16 @@ class Calibration:
 
         self.active_calibration.export(self.load_directory)
 
-        print('Calibration :: Done')
-        print('Calibration :: Exported to ' + self.load_directory)
+        print("Calibration :: Done")
+        print("Calibration :: Exported to " + self.load_directory)
 
         if show_results:
             leftCapture = open_capture(self.left_camera_id)
             rightCapture = open_capture(self.right_camera_id)
 
-            cv2.namedWindow('Undistorted')
+            cv2.namedWindow("Undistorted")
 
-            print('Hit `q` or `CTRL+C` to exit preview')
+            print("Hit `q` or `CTRL+C` to exit preview")
 
             while True:
                 _, left_frame = leftCapture.read()
@@ -124,14 +136,22 @@ class Calibration:
 
                 rectified_pair = self.rectify(left_gray_frame, right_gray_frame)
 
-                cv2.imshow('Undistorted', np.hstack((rectified_pair[0], rectified_pair[1])))
+                cv2.imshow("Undistorted", np.hstack((rectified_pair[0], rectified_pair[1])))
 
                 k = cv2.waitKey(1) & 0xFF
-                if k == ord('q'):
+                if k == ord("q"):
                     break
 
     def load_calibration(self):
+       """
+       This method set the directory of image
+       return: directory
+       """
        return StereoCalibration(input_folder=self.load_directory)
 
     def rectify(self, left_frame, right_frame):
+        """
+        This method will rectify both image
+        return: rectified image
+        """
         return self.active_calibration.rectify((left_frame, right_frame))

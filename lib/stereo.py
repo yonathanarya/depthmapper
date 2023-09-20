@@ -10,43 +10,46 @@ from lib.matchers.cuda import cudaMatcher
 from lib.matchers.stereoSGBM import StereoSGBMMatcher
 
 class StereoCapture:
-    def __init__(self, config, calibrator, matcher = 'stereobm'):
+    def __init__(self, config, calibrator, matcher = "stereobm"):
         self.config = config
         self.calibrator = calibrator
         self.stopped = False
         self.mav = sendDepth(config)
 
-        self.width = int(config['general']['width'])
-        self.height = int(config['general']['height'])
+        self.width = int(config["general"]["width"])
+        self.height = int(config["general"]["height"])
 
-        self.left = int(config['estimated_depth']['left_pixel'])
-        self.right = int(config['estimated_depth']['right_pixel'])
-        self.up = int(config['estimated_depth']['up_pixel'])
-        self.down = int(config['estimated_depth']['down_pixel'])
+        self.left = int(config["estimated_depth"]["left_pixel"])
+        self.right = int(config["estimated_depth"]["right_pixel"])
+        self.up = int(config["estimated_depth"]["up_pixel"])
+        self.down = int(config["estimated_depth"]["down_pixel"])
 
-        self.left_camera_id = int(config['general']['left_camera_id'])
-        self.right_camera_id = int(config['general']['right_camera_id'])
+        self.left_camera_id = int(config["general"]["left_camera_id"])
+        self.right_camera_id = int(config["general"]["right_camera_id"])
 
-        self.show_rgb = int(config['general']['show_rgb_frame'])
-        self.disable_stream = int(config['general']['disable_stream'])
-        self.enable_record = int(config['general']['enable_record'])
-        self.result = cv2.VideoWriter('result.avi', 
-                                      cv2.VideoWriter_fourcc(*'MJPG'),
+        self.show_rgb = int(config["general"]["show_rgb_frame"])
+        self.disable_stream = int(config["general"]["disable_stream"])
+        self.enable_record = int(config["general"]["enable_record"])
+        self.result = cv2.VideoWriter("result.avi", 
+                                      cv2.VideoWriter_fourcc(*"MJPG"),
                                       10, (self.width,self.height))
 
         print(matcher)
 
-        if matcher == 'stereobm':
+        if matcher == "stereobm":
             self.matcher = StereoBMMatcher(config)
-        elif matcher == 'cuda':
+        elif matcher == "cuda":
             self.matcher = cudaMatcher(config)
-        elif matcher == 'stereosgbm':
+        elif matcher == "stereosgbm":
             self.matcher = StereoSGBMMatcher(config)
         else:
             print("unknown matcher specified, stopping")
             sys.exit()
 
     def produce_depth_map(self):
+        """
+        This method priduce the depth map in loop and show, record, or save the frame as picture depends on config on settings.conf
+        """
         self.leftCapture = open_capture(self.left_camera_id)
         self.rightCapture = open_capture(self.right_camera_id)
 
@@ -112,20 +115,20 @@ class StereoCapture:
                             self.mav.depth(estimated)
                             # self.result.write(disparity_color)
                         else:
-                            cv2.imwrite('sample.png', cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
                             # continue
                     else:
                         print("DEPTH MAP")
-                        cv2.imwrite('sample.png', cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                        cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
                         cv2.imshow("Depth map", disparity_color)
                         estimated = self.estimate(disparity_color)
                         self.mav.depth(estimated)
                         # continue
 
                     k = cv2.waitKey(1) & 0xFF
-                    if k == ord('q'):
+                    if k == ord("q"):
                         break
                 else:
                     end = int(time.time() * 1000.0)
@@ -139,9 +142,16 @@ class StereoCapture:
         maxval = max(ticks)
         avgval = np.mean(ticks)
 
-        print('Timings -- min: ' + str(minval) + 'ms, max: ' + str(maxval) + 'ms, mean: ' + str(avgval) + 'ms')
+        print("Timings -- min: " + str(minval) + "ms, max: " + str(maxval) + "ms, mean: " + str(avgval) + "ms")
 
     def rectify(self, left_frame, right_frame):
+        """
+        This method rectify the GRAY frame of both camera
+        args:
+            left_frame: left image captured
+            right_frame: right image captured
+        return: rectified GRAY image
+        """
         # Convert to greyscale
         left_grey = cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY)
         right_grey = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
@@ -150,8 +160,14 @@ class StereoCapture:
         return self.calibrator.rectify(left_grey, right_grey)
     
     def estimate(self, disparity):
+        """
+        This method will compute distance from disparity map that will be sent over mavlink
+        args:
+            disparity: disparity map of in GRAYSCALE/8 bit color
+        return: computed distance
+        """
         config = self.config
-        factor = factor = float(config['estimated_depth']['depth_factor'])
+        factor = factor = float(config["estimated_depth"]["depth_factor"])
         arr = np.array(disparity)
         # depth = float(depth)
         depth = np.sum(arr[self.up:self.down, self.left:self.right])
@@ -173,6 +189,9 @@ class StereoCapture:
 
 
     def stop(self):
+        """
+        This method stop the capture of left and right camera
+        """
         self.leftCapture.stop()
         self.rightCapture.stop()
 
