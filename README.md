@@ -94,6 +94,7 @@ Output is the average sum from the disparity map's center area and is sent to Pi
 
 This is a sample of the result from the disparity map; on the top left corner is FPS measured (when not streamed through SSH, the FPS increases to around 20)
 ![alt text](https://github.com/yonathanarya/depthmapper/blob/master/sample.png?raw=true)
+![alt text](https://github.com/yonathanarya/depthmapper/blob/master/orig.png?raw=true)
 
 
 ### Camera delay
