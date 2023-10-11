@@ -63,10 +63,6 @@ class Calibration:
             while True:
                 _, frame1 = leftCapture.read()
                 _, frame2 = rightCapture.read()
-                # frame1 = cv2.resize(frame1, (self.width, self.height))
-                # frame2 = cv2.resize(frame2, (self.width, self.height))
-                # frame1=cv2.VideoCapture(0)
-                # frame2=cv2.VideoCapture(1)
                 try:
                     calibrator._get_corners(frame1)
                     calibrator._get_corners(frame2)

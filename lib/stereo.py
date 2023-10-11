@@ -3,6 +3,7 @@ import sys
 import numpy as np
 from lib.cam import open_capture
 import time
+import configparser
 
 from lib.mavlink import sendDepth
 from lib.algo.bm import StereoBMMatcher
@@ -18,11 +19,6 @@ class StereoCapture:
 
         self.width = int(config["general"]["width"])
         self.height = int(config["general"]["height"])
-
-        self.left = int(config["estimated_depth"]["left_pixel"])
-        self.right = int(config["estimated_depth"]["right_pixel"])
-        self.up = int(config["estimated_depth"]["up_pixel"])
-        self.down = int(config["estimated_depth"]["down_pixel"])
 
         self.left_camera_id = int(config["general"]["left_camera_id"])
         self.right_camera_id = int(config["general"]["right_camera_id"])
@@ -55,13 +51,13 @@ class StereoCapture:
         self.leftCapture = open_capture(self.left_camera_id)
         self.rightCapture = open_capture(self.right_camera_id)
 
-        ticks = []
+        self.ticks = []
         prev_frame_time = 0
         new_frame_time = 0
         
         while self.stopped == False:
-            start = int(time.time() * 1000.0)
-            end = 0
+            self.start = int(time.time() * 1000.0)
+            self.end = 0
             
             self.leftCapture.grab()
             self.rightCapture.grab()
@@ -72,11 +68,11 @@ class StereoCapture:
             try:
                 if left_grabbed and right_grabbed:
                     rectified_pair = self.rectify(left_frame, right_frame)
-                    # rectified_pair = [cv2.cvtColor(cv2.imread("left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("right.png"), cv2.COLOR_BGR2GRAY)]
+                    # rectified_pair = [cv2.cvtColor(cv2.imread("image_left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("image_right.png"), cv2.COLOR_BGR2GRAY)]
                     
                     disparity = self.matcher.process_pair(rectified_pair)
 
-                    end = int(time.time() * 1000.0)
+                    self.end = int(time.time() * 1000.0)
 
                     disparity_normal = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
                     image = np.array(disparity_normal, dtype = np.uint8)
@@ -99,17 +95,19 @@ class StereoCapture:
                         cv2.imshow("GRAYSCALE", np.hstack((self.rectify(left_frame, right_frame))))
                     elif self.disable_stream:
                         if self.enable_record:
+                            # cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            # cv2.imwrite("orig.png", np.hstack((self.rectify(left_frame, right_frame))))
                             self.result.write(cv2.applyColorMap(image, cv2.COLORMAP_BONE))
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
                         else:
-                            # cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
-                            # cv2.imwrite("orig.png", np.hstack((self.rectify(left_frame, right_frame))))
+                            cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                            cv2.imwrite("orig.png", np.hstack((self.rectify(left_frame, right_frame))))
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
                     else:
                         print("DEPTH MAP")
-                        cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
+                        # cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
                         cv2.imshow("Depth map", disparity_color)
                         estimated = self.estimate(disparity_color)
                         self.mav.depth(estimated)
@@ -119,16 +117,16 @@ class StereoCapture:
                     if k == ord("q"):
                         break
                 else:
-                    end = int(time.time() * 1000.0)
+                    self.end = int(time.time() * 1000.0)
             except KeyboardInterrupt:
-                end = int(time.time() * 1000.0)
+                self.end = int(time.time() * 1000.0)
 
-            ticks.append(end - start)
+            self.ticks.append(self.end - self.start)
 
         # Log out timings
-        minval = min(ticks)
-        maxval = max(ticks)
-        avgval = np.mean(ticks)
+        minval = min(self.ticks)
+        maxval = max(self.ticks)
+        avgval = np.mean(self.ticks)
 
         print("Timings -- min: " + str(minval) + "ms, max: " + str(maxval) + "ms, mean: " + str(avgval) + "ms")
 
@@ -152,32 +150,48 @@ class StereoCapture:
             disparity: disparity map of in GRAYSCALE/8 bit color
         return: computed distance
         """
-        config = self.config
-        factor = factor = float(config["estimated_depth"]["depth_factor"])
+
+        config = configparser.ConfigParser()
+        config.read("settings.conf")
+        self.left = int(config["estimated_depth"]["left_pixel"])
+        self.right = int(config["estimated_depth"]["right_pixel"])
+        self.up = int(config["estimated_depth"]["up_pixel"])
+        self.down = int(config["estimated_depth"]["down_pixel"])
+
+        factor = float(config["estimated_depth"]["depth_factor"])
         arr = np.array(disparity)
         # depth = float(depth)
         depth = np.sum(arr[self.up:self.down, self.left:self.right])
+        ## Zero value is ignored because it usually the shadow result
         count = np.count_nonzero(arr[self.up:self.down, self.left:self.right])
         estimated = 255-(factor*depth/count)
         black = ((self.down-self.up)*(self.right-self.left))-count
         print("estimated depth: " + str(round(estimated,1)))
         print("black pixel: "+str(black))
-        if black > 10000:
+        if black > float(config["estimated_depth"]["black_pixel"]):
             output = 100
         else:
-            if estimated >= 170 and estimated < 255:
+            if estimated >= float(config["estimated_depth"]["max_depth"]) and estimated < 255:
                 output = 200
-            elif estimated >= 120 and estimated < 170:
+            elif estimated >= float(config["estimated_depth"]["min_depth"]) and estimated < float(config["estimated_depth"]["max_depth"]):
                 output = 150
-            elif estimated <120:
+            elif estimated < float(config["estimated_depth"]["min_depth"]):
                 output = 100
         return int(output)
 
 
     def stop(self):
         """
-        This method stop the capture of left and right camera
+        This method stop the capture of left and right camera and show timing log
         """
+
+        # Log out timings
+        minval = min(self.ticks)
+        maxval = max(self.ticks)
+        avgval = np.mean(self.ticks)
+
+        print("Timings -- min: " + str(minval) + "ms, max: " + str(maxval) + "ms, mean: " + str(avgval) + "ms")
+
         self.leftCapture.stop()
         self.rightCapture.stop()
 

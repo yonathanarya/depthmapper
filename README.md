@@ -16,11 +16,11 @@ GPS: Here3 (u-blox M8P)
 
 Stereo Camera: 2 pcs Logitech C270 HD Webcam
 
-RC Kit: Offbrand offroad 4WD frame kit
+Robot Chassis: TP100 Tracked Differential Steering Robot
 
-Motor: Brushed
+Motor: 2 pcs Brushed 6-12V Motors
 
-ESC: Brushed ESC
+Motor Driver: L298N H-Bridge Motor Driver
 
 Battery: 2S LiPo battery
 
@@ -87,7 +87,7 @@ cudabm: CUDA/GPU block matching algorithm, similiar to bm but using GPU to compu
 cudasgm: CUDA/GPU semi global matching, based on OpenCV docs is similiar to sgbm but using GPU to compute. (I'm still curious why it is not named sgbm even if the documentation is similiar)
 
 
-CudaBM is the default if this option is ignored.
+CudaSGM is the default if this option is ignored.
 
 
 ### Configuration

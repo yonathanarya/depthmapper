@@ -17,7 +17,7 @@ class StereoSGBMMatcher:
             int(config["stereosgbm"]["p1_factor"]) * blockSize * blockSize,
             int(config["stereosgbm"]["p2_factor"]) * blockSize * blockSize,
             int(config["stereosgbm"]["disp_12_max_diff"]),
-            int(config["stereosgbm"]["pre_filter_cap"]),
+            int(config["stereosgbm"]["prefilter_cap"]),
             int(config["stereosgbm"]["uniqueness_ratio"]),
             int(config["stereosgbm"]["speckle_window"]),
             int(config["stereosgbm"]["speckle_range"])
