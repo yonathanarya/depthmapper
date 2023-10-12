@@ -164,19 +164,26 @@ class StereoCapture:
         depth = np.sum(arr[self.up:self.down, self.left:self.right])
         ## Zero value is ignored because it usually the shadow result
         count = np.count_nonzero(arr[self.up:self.down, self.left:self.right])
-        estimated = 255-(factor*depth/count)
+        # estimated = 255-(factor*depth/count)
+        estimated = (factor*depth/count)
         black = ((self.down-self.up)*(self.right-self.left))-count
         print("estimated depth: " + str(round(estimated,1)))
         print("black pixel: "+str(black))
-        if black > float(config["estimated_depth"]["black_pixel"]):
-            output = 100
-        else:
-            if estimated >= float(config["estimated_depth"]["max_depth"]) and estimated < 255:
+        if estimated >= float(config["estimated_depth"]["max_depth"]) and estimated < 255:
+            if black > float(config["estimated_depth"]["black_pixel"]):
+                output = 80
+            else:
                 output = 200
-            elif estimated >= float(config["estimated_depth"]["min_depth"]) and estimated < float(config["estimated_depth"]["max_depth"]):
+        elif estimated >= float(config["estimated_depth"]["min_depth"]) and estimated < float(config["estimated_depth"]["max_depth"]):
+            if black > float(config["estimated_depth"]["black_pixel"]):
+                output = 80
+            else:
                 output = 150
-            elif estimated < float(config["estimated_depth"]["min_depth"]):
-                output = 100
+        elif estimated < float(config["estimated_depth"]["min_depth"]):
+            if black > float(config["estimated_depth"]["black_pixel"]):
+                output = 80
+            else:
+                output = 50
         return int(output)
 
 
