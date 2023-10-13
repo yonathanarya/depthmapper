@@ -12,8 +12,6 @@ import os
 from lib.calibration import Calibration
 from lib.stereo import StereoCapture
 
-LOAD_DIR = str(Path.home()) + "/.stereo_calibration/"
-
 parser = argparse.ArgumentParser(description="Depth mapping module")
 parser.add_argument("-a", "--algorithm", default="cudasgm",
                     help="Algorithm to use. Options: bm, sgbm, cudabm, cudasgm")
@@ -35,7 +33,7 @@ def main():
     print("disabling camera auto setting")
     os.system("./disable_auto_camera1.sh")
 
-    calibrator = Calibration(config, LOAD_DIR)
+    calibrator = Calibration(config)
     if not calibrator.has_calibration():
         print("Calibration file not found!")
         print("run `python3 capture_calib.py`")

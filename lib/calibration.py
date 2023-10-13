@@ -14,7 +14,7 @@ class Calibration:
     """
     This class provide calibration method for stereo image
     """
-    def __init__(self, config, load_directory, capture_directory = "images/"):
+    def __init__(self, config, capture_directory = "images/"):
         self.width = int(config["general"]["width"])
         self.height = int(config["general"]["height"])
 
@@ -26,15 +26,12 @@ class Calibration:
         self.right_camera_id = config["general"]["right_camera_id"]
 
         self.capture_directory = capture_directory
-        self.load_directory = load_directory
 
-        if os.path.exists(self.load_directory) == False or len(os.listdir(self.load_directory)) == 0:
+        if os.path.exists("stereoMap.xml") == False:
             self.active_calibration = None
-        elif os.path.exists("stereoMap.xml"):
+        else:
             print("hehe...")
             self.active_calibration = "Manual"
-        else:
-            self.active_calibration = self.load_calibration()
 
         if not os.path.exists(self.capture_directory):
             os.mkdir(self.capture_directory)
@@ -137,7 +134,7 @@ class Calibration:
 
         cv2.destroyAllWindows()
 
-        ############## CALIBRATION #######################################################
+        # Undistort image
 
         retL, cameraMatrixL, distL, rvecsL, tvecsL = cv2.calibrateCamera(objpoints, imgpointsL, frameSize, None, None)
         heightL, widthL, channelsL = imgL.shape
@@ -147,16 +144,12 @@ class Calibration:
         heightR, widthR, channelsR = imgR.shape
         newCameraMatrixR, roi_R = cv2.getOptimalNewCameraMatrix(cameraMatrixR, distR, (widthR, heightR), 1, (widthR, heightR))
 
-        ########## Stereo Vision Calibration #############################################
+        # Rectify image
 
         flags = 0
         flags |= cv2.CALIB_FIX_INTRINSIC
-        # Here we fix the intrinsic camara matrixes so that only Rot, Trns, Emat and Fmat are calculated.
-        # Hence intrinsic parameters are the same 
-
         criteria_stereo = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-        # This step is performed to transformation between the two cameras and calculate Essential and Fundamenatl matrix
         retStereo, newCameraMatrixL, distL, newCameraMatrixR, distR, rot, trans, essentialMatrix, fundamentalMatrix = cv2.stereoCalibrate(objpoints, imgpointsL, imgpointsR, newCameraMatrixL, distL, newCameraMatrixR, distR, grayL.shape[::-1], criteria_stereo, flags)
 
         rectifyScale= 1
@@ -173,92 +166,4 @@ class Calibration:
         cv_file.write('stereoMapR_x',stereoMapR[0])
         cv_file.write('stereoMapR_y',stereoMapR[1])
         cv_file.release()
-
-    def compute_calibration(self, show_results = False):
-        """
-        This method will compute saved image from workingdir/image/stereo for calibration
-        """
-        print("Calibration :: Computing...")
-        # calibrator = StereoCalibrator( chessboard_rows,  chessboard_cols,  chessboard_size, (width, height))
-        calibrator = StereoCalibrator( self.chessboard_rows,  self.chessboard_cols,  self.chessboard_size, (self.width, self.height))
-
-        for i in range (0, 30, 1):
-            if not os.path.exists(self.capture_directory + "left/img" + str(i) + ".png"):
-                continue
-            if not os.path.exists(self.capture_directory + "right/img" + str(i) + ".png"):
-                continue
-
-            left = cv2.imread(self.capture_directory + "left/img" + str(i) + ".png", 1)
-            right = cv2.imread(self.capture_directory + "right/img" + str(i) + ".png", 1)
-
-            try:
-                calibrator._get_corners(left)
-                calibrator._get_corners(right)
-                # self.show_corners(left, right, calibrator._get_corners(left), calibrator._get_corners(right))
-            except ChessboardNotFoundError as error:
-                print(str(i) + ": " + str(error))
-            else:
-                calibrator.add_corners((left, right), show_results = False)
-
-        self.active_calibration = calibrator.calibrate_cameras()
-
-        if not os.path.exists(self.load_directory):
-            os.mkdir(self.load_directory)
-
-        self.active_calibration.export(self.load_directory)
-
-        print("Calibration :: Done")
-        print("Calibration :: Exported to " + self.load_directory)
-
-        if show_results:
-            leftCapture = open_capture(self.left_camera_id)
-            rightCapture = open_capture(self.right_camera_id)
-
-            cv2.namedWindow("Undistorted")
-
-            print("Hit `q` or `CTRL+C` to exit preview")
-
-            while True:
-                _, left_frame = leftCapture.read()
-                _, right_frame = rightCapture.read()
-                # left_frame = cv2.resize(left_frame, (self.width, self.height))
-                # right_frame = cv2.resize(right_frame, (self.width, self.height))
-
-                left_gray_frame = cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY)
-                right_gray_frame = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
-
-                rectified_pair = self.rectify(left_gray_frame, right_gray_frame)
-
-                cv2.imshow("Undistorted", np.hstack((rectified_pair[0], rectified_pair[1])))
-
-                k = cv2.waitKey(1) & 0xFF
-                if k == ord("q"):
-                    break
-
-    
-    def show_corners(self, imageL, imageR ,cornersL, cornersR):
-        """Show chessboard corners found in image"""
-        left = imageL
-        right = imageR
-        cv2.drawChessboardCorners(left, (self.chessboard_rows, self.chessboard_cols), cornersL,
-                                  True)
-        cv2.drawChessboardCorners(right, (self.chessboard_rows, self.chessboard_cols), cornersR,
-                                  True)
-        window_name = "Chessboard"
-        cv2.imshow(window_name, np.hstack((left, right)))
-        if cv2.waitKey(0):
-            cv2.destroyWindow(window_name)
-    
-    def load_calibration(self):
-       """
-       This method set the directory of image
-       return: directory
-       """
-       return StereoCalibration(input_folder=self.load_directory)
-
-    def rectify(self, left_frame, right_frame):
-        """
-        This method will rectify both image
-        return: rectified image
-        """
-        return self.active_calibration.rectify((left_frame, right_frame))
+        print("Calibration saved as stereoMap.xml")

@@ -4,7 +4,6 @@ import numpy as np
 from lib.cam import open_capture
 import time
 import configparser
-import urllib.request
 
 from lib.mavlink import sendDepth
 from lib.algo.bm import StereoBMMatcher
@@ -84,18 +83,10 @@ class StereoCapture:
                 right_grabbed = True
                 left_frame = cv2.imread("2.png")
                 right_frame = cv2.imread("1.png")
-                # reqL = urllib.request.urlopen('https://i.stack.imgur.com/TEejk.jpg')
-                # arrL = np.asarray(bytearray(reqL.read()), dtype=np.uint8)
-                # left_frame = cv2.imdecode(arrL, -1) # 'Load it as it is'
-                # reqR = urllib.request.urlopen('https://i.stack.imgur.com/9ymuV.jpg')
-                # arrR = np.asarray(bytearray(reqR.read()), dtype=np.uint8)
-                # right_frame = cv2.imdecode(arrR, -1) # 'Load it as it is'
                 rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
                         
             try:
-                if left_grabbed and right_grabbed:
-                    # rectified_pair = self.rectify(left_frame, right_frame)
-                                        
+                if left_grabbed and right_grabbed:                                        
                     if int(config['general']['flip']) == 0:
                         frame_left = cv2.remap(cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), self.stereoMapL_x, self.stereoMapL_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
                         frame_right = cv2.remap(cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY), self.stereoMapR_x, self.stereoMapR_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
