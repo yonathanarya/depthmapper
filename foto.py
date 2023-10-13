@@ -9,13 +9,13 @@ right.set(cv2.CAP_PROP_FRAME_WIDTH,640)
 right.set(cv2.CAP_PROP_FRAME_HEIGHT,360)
 sleep(2)
 
-# left.grab()
-# right.grab()
-# lret, frame0 = left.retrieve()
-# rret, frame1 = right.retrieve()
+left.grab()
+right.grab()
+lret, frame0 = left.retrieve()
+rret, frame1 = right.retrieve()
 
-lret, frame0 = left.read()
-rret, frame1 = right.read()
+# lret, frame0 = left.read()
+# rret, frame1 = right.read()
 
 sleep(2)
 

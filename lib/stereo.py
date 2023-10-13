@@ -4,6 +4,7 @@ import numpy as np
 from lib.cam import open_capture
 import time
 import configparser
+import urllib.request
 
 from lib.mavlink import sendDepth
 from lib.algo.bm import StereoBMMatcher
@@ -11,7 +12,7 @@ from lib.algo.cuda import cudaMatcher
 from lib.algo.sgbm import StereoSGBMMatcher
 
 class StereoCapture:
-    def __init__(self, config, calibrator, matcher = "stereobm"):
+    def __init__(self, config, calibrator, matcher = "cudasgm"):
         self.config = config
         self.calibrator = calibrator
         self.stopped = False
@@ -29,6 +30,13 @@ class StereoCapture:
         self.result = cv2.VideoWriter("result.avi", 
                                       cv2.VideoWriter_fourcc(*"MJPG"),
                                       10, (self.width,self.height))
+
+        cv_file = cv2.FileStorage()
+        cv_file.open('stereoMap.xml', cv2.FileStorage_READ)
+        self.stereoMapL_x = cv_file.getNode('stereoMapL_x').mat()
+        self.stereoMapL_y = cv_file.getNode('stereoMapL_y').mat()
+        self.stereoMapR_x = cv_file.getNode('stereoMapR_x').mat()
+        self.stereoMapR_y = cv_file.getNode('stereoMapR_y').mat()    
 
         print(matcher)
 
@@ -61,14 +69,41 @@ class StereoCapture:
             
             self.leftCapture.grab()
             self.rightCapture.grab()
+
+            config = configparser.ConfigParser()
+            config.read("settings.conf")
             
-            left_grabbed, left_frame = self.leftCapture.retrieve()
-            right_grabbed, right_frame = self.rightCapture.retrieve()
-            
+            if int(config['general']['flip']) == 0:
+                left_grabbed, left_frame = self.leftCapture.retrieve()
+                right_grabbed, right_frame = self.rightCapture.retrieve()
+            elif int(config['general']['flip']) == 1:
+                left_grabbed, right_frame = self.leftCapture.retrieve()
+                right_grabbed, left_frame = self.rightCapture.retrieve()
+            elif int(config['general']['flip']) == 3:
+                left_grabbed = True
+                right_grabbed = True
+                left_frame = cv2.imread("2.png")
+                right_frame = cv2.imread("1.png")
+                # reqL = urllib.request.urlopen('https://i.stack.imgur.com/TEejk.jpg')
+                # arrL = np.asarray(bytearray(reqL.read()), dtype=np.uint8)
+                # left_frame = cv2.imdecode(arrL, -1) # 'Load it as it is'
+                # reqR = urllib.request.urlopen('https://i.stack.imgur.com/9ymuV.jpg')
+                # arrR = np.asarray(bytearray(reqR.read()), dtype=np.uint8)
+                # right_frame = cv2.imdecode(arrR, -1) # 'Load it as it is'
+                rectified_pair = [cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)]
+                        
             try:
                 if left_grabbed and right_grabbed:
-                    rectified_pair = self.rectify(left_frame, right_frame)
-                    # rectified_pair = [cv2.cvtColor(cv2.imread("image_left.png"), cv2.COLOR_BGR2GRAY), cv2.cvtColor(cv2.imread("image_right.png"), cv2.COLOR_BGR2GRAY)]
+                    # rectified_pair = self.rectify(left_frame, right_frame)
+                                        
+                    if int(config['general']['flip']) == 0:
+                        frame_left = cv2.remap(cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), self.stereoMapL_x, self.stereoMapL_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                        frame_right = cv2.remap(cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY), self.stereoMapR_x, self.stereoMapR_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                        rectified_pair = [frame_left, frame_right]
+                    elif int(config['general']['flip']) == 1:
+                        frame_left = cv2.remap(cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY), self.stereoMapR_x, self.stereoMapL_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                        frame_right = cv2.remap(cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY), self.stereoMapL_x, self.stereoMapL_y, cv2.INTER_LANCZOS4, cv2.BORDER_CONSTANT, 0)
+                        rectified_pair = [frame_left, frame_right]
                     
                     disparity = self.matcher.process_pair(rectified_pair)
 
@@ -92,7 +127,7 @@ class StereoCapture:
 
                     if self.show_gray:
                         print("Show grayscale from left and right frame")
-                        cv2.imshow("GRAYSCALE", np.hstack((self.rectify(left_frame, right_frame))))
+                        cv2.imshow("GRAYSCALE", np.hstack((right_frame, left_frame)))
                     elif self.disable_stream:
                         if self.enable_record:
                             # cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
@@ -102,7 +137,9 @@ class StereoCapture:
                             self.mav.depth(estimated)
                         else:
                             cv2.imwrite("sample.png", cv2.applyColorMap(image, cv2.COLORMAP_BONE))
-                            cv2.imwrite("orig.png", np.hstack((self.rectify(left_frame, right_frame))))
+                            cv2.imwrite("orig.png", np.hstack((rectified_pair[1], rectified_pair[0])))
+                            cv2.imwrite("left_rectified.png", rectified_pair[0])
+                            cv2.imwrite("right_rectified.png", rectified_pair[1])
                             estimated = self.estimate(disparity_color)
                             self.mav.depth(estimated)
                     else:
@@ -138,6 +175,8 @@ class StereoCapture:
             right_frame: right image captured
         return: rectified GRAY image
         """
+        # left_frame = cv2.resize(left_frame,(320,180))
+        # right_frame = cv2.resize(right_frame,(320,180))
         left_grey = cv2.cvtColor(left_frame, cv2.COLOR_BGR2GRAY)
         right_grey = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
 
@@ -169,22 +208,24 @@ class StereoCapture:
         black = ((self.down-self.up)*(self.right-self.left))-count
         print("estimated depth: " + str(round(estimated,1)))
         print("black pixel: "+str(black))
-        if estimated >= float(config["estimated_depth"]["max_depth"]) and estimated < 255:
+        if estimated >= float(config["estimated_depth"]["max_depth"]) and estimated <= 255:
             if black > float(config["estimated_depth"]["black_pixel"]):
-                output = 80
+                proximity = 80
             else:
-                output = 200
+                proximity = 200
         elif estimated >= float(config["estimated_depth"]["min_depth"]) and estimated < float(config["estimated_depth"]["max_depth"]):
             if black > float(config["estimated_depth"]["black_pixel"]):
-                output = 80
+                proximity = 80
             else:
-                output = 150
+                proximity = 150
         elif estimated < float(config["estimated_depth"]["min_depth"]):
             if black > float(config["estimated_depth"]["black_pixel"]):
-                output = 80
+                proximity = 80
             else:
-                output = 50
-        return int(output)
+                proximity = 50
+        else:
+            proximity = 0
+        return int(proximity)
 
 
     def stop(self):

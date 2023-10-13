@@ -14,7 +14,7 @@ def main():
     calibrator = Calibration(config, LOAD_DIR)
     print("Please wait for calibration")
 
-    calibrator.compute_calibration(True)
+    calibrator.calib_rectify()
 
 if __name__ == "__main__":
     main()
